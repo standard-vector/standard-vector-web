@@ -1,0 +1,370 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   DYNAMIC MOMENTUM — DESIGN TOKEN LAYER
+   ----------------------------------------------------------------------------
+   Architecture (three tiers, raw hex exists ONLY in this file):
+
+   1. Brand primitives   — logo-derived constants (`@theme static`). Tailwind
+      emits each as a CSS custom property on :root AND generates utilities
+      (e.g. `text-blue-primary`), which is the v4-native equivalent of the v3
+      `theme.extend.colors` mapping: tokens and utilities stay in sync by
+      construction.
+   2. Semantic layer     — `--sv-*` variables that flip with [data-theme].
+      This indirection exists because a Tailwind v4 theme key IS a CSS
+      variable, so `--color-surface` cannot reference itself.
+   3. Tailwind mapping   — `@theme inline` re-exports every semantic variable
+      under its public `--color-*` name (the names components are allowed to
+      reference) and generates the matching utilities (`bg-surface`,
+      `text-text`, `shadow-brand-blue`, …).
+
+   Components must reference tier 3 (utilities or `var(--color-*)`) — never a
+   raw hex value, and tier 1 primitives only for explicitly brand-colored art
+   (logo strokes, gradients).
+   ========================================================================== */
+
+/* `dark:` utilities follow the data-theme attribute set by the pre-paint
+   inline script — never `prefers-color-scheme` directly, so the user's
+   explicit choice always wins. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ----------------------------------------------------------------------------
+   Reset Tailwind's default palette and gray shadows. Dynamic Momentum allows
+   no off-brand color and no neutral elevation: if a utility like `bg-red-500`
+   or `shadow-md` is attempted, it simply does not exist.
+   -------------------------------------------------------------------------- */
+@theme {
+  --color-*: initial;
+  --shadow-*: initial;
+}
+
+/* ----------------------------------------------------------------------------
+   TIER 1 — Brand primitives (theme-invariant, from the logo)
+   `static` keeps them emitted even when no utility references them, so raw
+   CSS (SVG gradients, art direction) can rely on `var(--color-blue-tint-1)`.
+   -------------------------------------------------------------------------- */
+@theme static {
+  /* Logo primaries */
+  --color-blue-primary: #1e40af; /* Cobalt Blue */
+  --color-orange-secondary: #f97316; /* Tangerine Orange */
+
+  /* Depth variations */
+  --color-blue-shade-1: #152e7a; /* darker */
+  --color-blue-tint-1: #3b82f6; /* lighter — the arrow's tip */
+  --color-orange-shade-1: #c2410c; /* darker */
+  --color-orange-tint-1: #fb923c; /* lighter */
+
+  /* Semantic auxiliaries (fills/badges; for text see *-text tokens below) */
+  --color-success: #16a34a;
+  --color-warning: #ca8a04;
+  --color-error: #dc2626;
+
+  /* Shape */
+  --radius-card: 1.25rem;
+  --radius-control: 0.75rem;
+
+  /* Signature motion. ONE easing for every interaction so motion feels
+     branded (fast attack, long confident settle), one accelerating ease-in
+     for stroke drawing (the loader gains speed toward the arrow tip).
+     Mirrored in lib/motion.tsx — keep both in sync. */
+  --ease-energize: cubic-bezier(0.33, 1, 0.24, 1);
+  --ease-draw: cubic-bezier(0.6, 0.04, 0.85, 0.3);
+}
+
+/* ----------------------------------------------------------------------------
+   TIER 2 — Semantic theme layer.
+   Dark is the brand-default (and the no-JS fallback); the inline script in
+   app/layout.tsx resolves the real theme (stored choice → OS preference)
+   before first paint, so there is never a flash of the wrong theme.
+
+   Every text token is WCAG AA-verified against BOTH surface and
+   surface-muted (ratios in README.md). Tokens that must diverge from the
+   shared brand value to stay AA (interactive text, status text, focus ring)
+   flip per theme; that derivation is deliberate and documented.
+   -------------------------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces & ink */
+  --sv-surface: #000000;
+  --sv-surface-muted: #1a1a1a;
+  --sv-ui-borders: #333333;
+  --sv-text: #e0e0e0;
+  --sv-text-muted: #999999;
+
+  /* Actions & accents (shared across themes; ink pairings keep them AA) */
+  --sv-primary: #1e40af;
+  --sv-primary-fg: #ffffff; /* 8.72:1 on primary */
+  --sv-secondary: #f97316;
+  --sv-secondary-fg: #2a1205; /* warm near-black: 6.31:1 on secondary (white fails at 2.80:1) */
+  --sv-accent-blue: #1e40af;
+  --sv-accent-orange: #f97316;
+
+  /* AA-safe accent inks — flip per theme so text/icon accents and the focus
+     ring always clear 4.5:1 (#1E40AF is only 2.41:1 on black). */
+  --sv-interactive: #3b82f6;
+  --sv-focus-ring: #3b82f6;
+  --sv-secondary-text: #fb923c;
+  --sv-success-text: #16a34a;
+  --sv-warning-text: #ca8a04;
+  --sv-error-text: #ef4444;
+
+  /* Data marks: sparkline body is deliberately recessive (the stat value
+     carries the reading); the current-period accent uses the AA inks above. */
+  --sv-data-dim: #525252;
+
+  /* Brand-tinted elevation. On near-black, pigment shadows are invisible, so
+     dark elevation = black depth + a tint-family glow (same blue/orange
+     identity, perceptually equivalent to the light theme's #152E7A/#C2410C
+     pigment shadows). Hover variants deepen AND soften (larger blur/offset). */
+  --sv-shadow-brand-blue:
+    0 1px 2px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(59 130 246 / 0.1),
+    0 12px 36px -12px rgb(59 130 246 / 0.3);
+  --sv-shadow-brand-blue-hover:
+    0 2px 6px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(59 130 246 / 0.16),
+    0 26px 64px -18px rgb(59 130 246 / 0.45);
+  --sv-shadow-brand-orange:
+    0 1px 2px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(251 146 60 / 0.1),
+    0 12px 36px -12px rgb(251 146 60 / 0.28);
+  --sv-shadow-brand-orange-hover:
+    0 2px 6px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(251 146 60 / 0.16),
+    0 26px 64px -18px rgb(251 146 60 / 0.42);
+
+  /* Motion durations (ms) — consumed by CSS transitions; mirrored in
+     lib/motion.tsx as seconds. */
+  --sv-duration-quick: 160ms;
+  --sv-duration-base: 280ms;
+  --sv-duration-slow: 500ms;
+  --sv-duration-draw: 1500ms;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --sv-surface: #ffffff;
+  --sv-surface-muted: #f0f0f0;
+  --sv-ui-borders: #cccccc;
+  --sv-text: #2d2d2d;
+  --sv-text-muted: #666666;
+
+  --sv-interactive: #1e40af;
+  --sv-focus-ring: #1e40af;
+  --sv-secondary-text: #c2410c;
+  /* Spec status hues fail AA on the light muted card (#16A34A → 4.02:1,
+     #DC2626 → 4.24:1), so light text-status steps are darkened to pass. */
+  --sv-success-text: #166534;
+  --sv-warning-text: #854d0e;
+  --sv-error-text: #b91c1c;
+
+  --sv-data-dim: #bdbdbd;
+
+  /* Pigment shadows tinted with the brand shades, exactly per spec:
+     blue elements cast #152E7A-tinted shadows, orange cast #C2410C. */
+  --sv-shadow-brand-blue:
+    0 1px 2px rgb(21 46 122 / 0.1), 0 10px 28px -10px rgb(21 46 122 / 0.35);
+  --sv-shadow-brand-blue-hover:
+    0 2px 4px rgb(21 46 122 / 0.1), 0 22px 52px -14px rgb(21 46 122 / 0.45);
+  --sv-shadow-brand-orange:
+    0 1px 2px rgb(194 65 12 / 0.1), 0 10px 28px -10px rgb(194 65 12 / 0.32);
+  --sv-shadow-brand-orange-hover:
+    0 2px 4px rgb(194 65 12 / 0.1), 0 22px 52px -14px rgb(194 65 12 / 0.42);
+}
+
+/* ----------------------------------------------------------------------------
+   TIER 3 — Public semantic tokens + Tailwind utilities.
+   `inline` makes each utility resolve straight to the flipping `--sv-*`
+   variable, and Tailwind still emits the public `--color-*` custom property
+   for raw-CSS consumers. These are the only names components may use.
+   -------------------------------------------------------------------------- */
+@theme inline {
+  --color-surface: var(--sv-surface);
+  --color-surface-muted: var(--sv-surface-muted);
+  --color-ui-borders: var(--sv-ui-borders);
+  --color-text: var(--sv-text);
+  --color-text-muted: var(--sv-text-muted);
+
+  --color-primary: var(--sv-primary);
+  --color-primary-fg: var(--sv-primary-fg);
+  --color-secondary: var(--sv-secondary);
+  --color-secondary-fg: var(--sv-secondary-fg);
+  --color-accent-blue: var(--sv-accent-blue);
+  --color-accent-orange: var(--sv-accent-orange);
+
+  --color-interactive: var(--sv-interactive);
+  --color-focus-ring: var(--sv-focus-ring);
+  --color-secondary-text: var(--sv-secondary-text);
+  --color-success-text: var(--sv-success-text);
+  --color-warning-text: var(--sv-warning-text);
+  --color-error-text: var(--sv-error-text);
+  --color-data-dim: var(--sv-data-dim);
+
+  --shadow-brand-blue: var(--sv-shadow-brand-blue);
+  --shadow-brand-blue-hover: var(--sv-shadow-brand-blue-hover);
+  --shadow-brand-orange: var(--sv-shadow-brand-orange);
+  --shadow-brand-orange-hover: var(--sv-shadow-brand-orange-hover);
+
+  /* Typography: Space Grotesk for display/headlines (angular, momentum-ish),
+     Inter for body and data values (stat values wear the body sans — a
+     display face at data sizes reads as decoration). */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-space-grotesk), var(--font-inter), ui-sans-serif, system-ui,
+    sans-serif;
+}
+
+/* ============================================================================
+   SIGNATURE UTILITIES
+   ========================================================================== */
+
+/* The one branded transition. Every hover/focus "energization" uses this —
+   never element-specific durations/easings. NOTE: do not apply to elements
+   whose transform is driven by Motion (parallax/tilt/variants) — CSS
+   transitions on transform would fight the animation loop; those elements
+   use `transition-[box-shadow,border-color] ease-energize` instead. */
+@utility transition-energize {
+  transition-property: transform, box-shadow, background-position,
+    background-color, border-color, color, fill, stroke, opacity;
+  transition-duration: var(--sv-duration-slow);
+  transition-timing-function: var(--ease-energize);
+}
+
+/* Progressive gradient surface for EnergizeButton: an oversized 3-stop
+   gradient whose position slides toward the bright "arrow tip" stop on
+   hover — energization, never an instant color swap. Tone components set
+   the three custom properties. */
+@utility energize-surface {
+  background-image: linear-gradient(
+    115deg,
+    var(--energize-from),
+    var(--energize-mid) 55%,
+    var(--energize-to)
+  );
+  background-size: 165% 100%;
+  background-position: 0% 50%;
+
+  &:hover {
+    background-position: 92% 50%;
+  }
+}
+
+/* Self-drawing underline for card/section titles (scaleX = transform-only,
+   no layout shift). Drawn on ancestor `.group` hover or keyboard focus. */
+@utility underline-draw {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.3em;
+    height: 2px;
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: left;
+    border-radius: 1px;
+    background: linear-gradient(
+      90deg,
+      var(--underline-from, var(--color-interactive)),
+      var(--underline-to, var(--color-secondary-text))
+    );
+    transition: transform var(--sv-duration-slow) var(--ease-energize);
+  }
+}
+
+/* Angular section background echoing the logo's ascent: two opposing
+   low-alpha gradient washes (blue rising from one corner, orange answering
+   from the other) blended over the surface — tints/shades only, never a
+   hard split. color-mix keeps it correct in both themes. */
+@utility momentum-panel {
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(
+      165deg,
+      color-mix(in oklab, var(--color-accent-blue) 16%, transparent) 0%,
+      transparent 52%
+    ),
+    linear-gradient(
+      24deg,
+      color-mix(in oklab, var(--color-accent-orange) 10%, transparent) 0%,
+      transparent 46%
+    );
+}
+
+/* Brand gradient headline text. Endpoints are the per-theme AA-safe accent
+   inks, so even the extremes of the gradient meet contrast requirements. */
+@utility text-gradient-brand {
+  background-image: linear-gradient(
+    96deg,
+    var(--color-interactive) 0%,
+    var(--color-secondary-text) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@layer components {
+  /* Underline-draw trigger: pointer hover or keyboard focus within the
+     owning `.group` (cards, list rows, headings). */
+  :where(.group:hover, .group:focus-within) .underline-draw::after {
+    transform: scaleX(1);
+  }
+}
+
+/* ============================================================================
+   BASE
+   ========================================================================== */
+@layer base {
+  * {
+    border-color: var(--color-ui-borders);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  /* Keyboard focus derives from the primary family and stays ≥3:1 against
+     both surfaces (tint on dark, primary on light). */
+  :focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-interactive);
+    color: var(--color-primary-fg);
+  }
+}
+
+/* Theme switches crossfade via the View Transitions API (ThemeProvider),
+   timed with the signature easing. Browsers without the API switch
+   instantly — the exact reduced-motion behavior. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 340ms;
+  animation-timing-function: var(--ease-energize);
+}
+
+/* Reduced motion: CSS animations/transitions collapse to instant states and
+   the theme crossfade is disabled. Motion-driven animation is handled in JS
+   (MotionConfig reducedMotion="user" + useMotionSafe guards). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}

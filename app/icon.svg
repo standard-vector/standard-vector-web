@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Standard Vector mark. Static asset: favicons render outside the app's
+       CSS scope, so brand hex values are inlined here by necessity. -->
+  <defs>
+    <linearGradient id="ascent" gradientUnits="userSpaceOnUse" x1="14" y1="104" x2="100" y2="16">
+      <stop offset="0" stop-color="#152e7a"/>
+      <stop offset="0.55" stop-color="#1e40af"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <path d="M14 104 L40 58 L58 84 L100 16" fill="none" stroke="url(#ascent)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M81 27.1 L100 16 L98.6 37.9" fill="none" stroke="#f97316" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
